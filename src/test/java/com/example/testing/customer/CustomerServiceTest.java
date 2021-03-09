@@ -36,7 +36,7 @@ class CustomerServiceTest {
     void itShouldSaveNewCustomer() {
         /* Given */
         Customer customer = new Customer(UUID.randomUUID(), "Michael", "1234");
-        /* Mocking the Return if Method findCustomerByPhoneNumber() is called */
+        /* Mocking the Return if Method save() is called */
         given(customerRepository.findCustomerByPhoneNumber(customer.getPhoneNumber())).willReturn(Optional.empty());
         /* When */
         customerService.saveNewCustomer(customer);
@@ -49,7 +49,7 @@ class CustomerServiceTest {
     }
 
     @Test
-    void itShouldSaveNewCustomerWhennIdIsNull() {
+    void itShouldSaveNewCustomerWhenIdIsNull() {
         /* Given */
         Customer customer = new Customer(null, "Michael", "1234");
         /* Mocking the Return if Method findCustomerByPhoneNumber() is called */
