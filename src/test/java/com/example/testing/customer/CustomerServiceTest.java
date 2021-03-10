@@ -1,5 +1,6 @@
 package com.example.testing.customer;
 
+import com.example.testing.utils.PhoneNumberValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,9 +20,10 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 class CustomerServiceTest {
-
     @Mock
     private CustomerRepository customerRepository;
+    @Mock
+    private PhoneNumberValidator phoneNumberValidator;
     @Captor
     private ArgumentCaptor<Customer> customerArgumentCaptor;
     private CustomerService customerService;
@@ -29,15 +31,18 @@ class CustomerServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        customerService = new CustomerService(customerRepository);
+        customerService = new CustomerService(customerRepository, phoneNumberValidator);
     }
 
     @Test
     void itShouldSaveNewCustomer() {
         /* Given */
-        Customer customer = new Customer(UUID.randomUUID(), "Michael", "1234");
+        String phoneNumber = "1234";
+        Customer customer = new Customer(UUID.randomUUID(), "Michael", phoneNumber);
         /* Mocking the Return if Method save() is called */
         given(customerRepository.findCustomerByPhoneNumber(customer.getPhoneNumber())).willReturn(Optional.empty());
+        /* Mocking the Return if Method test() is called */
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
         /* When */
         customerService.saveNewCustomer(customer);
         /* Then */
@@ -49,11 +54,29 @@ class CustomerServiceTest {
     }
 
     @Test
+    void itShouldNotSaveNewCustomerWhenPhoneNumberIsInvalid() {
+        /* Given */
+        String phoneNumber = "1234";
+        Customer customer = new Customer(UUID.randomUUID(), "Michael", phoneNumber);
+        /* Mocking the Return if Method test() is called */
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(false);
+        /* When */
+        /* Then */
+        assertThatThrownBy(() ->  customerService.saveNewCustomer(customer))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(String.format("PhoneNumber %s is not valid.", phoneNumber));
+        then(customerRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
     void itShouldSaveNewCustomerWhenIdIsNull() {
         /* Given */
-        Customer customer = new Customer(null, "Michael", "1234");
+        String phoneNumber = "1234";
+        Customer customer = new Customer(null, "Michael", phoneNumber);
         /* Mocking the Return if Method findCustomerByPhoneNumber() is called */
         given(customerRepository.findCustomerByPhoneNumber(customer.getPhoneNumber())).willReturn(Optional.empty());
+        /* Mocking the Return if Method test() is called */
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
         /* When */
         customerService.saveNewCustomer(customer);
         /* Then */
@@ -68,9 +91,12 @@ class CustomerServiceTest {
     @Test
     void itShouldNotSaveCustomerWhenCustomerExists() {
         /* Given */
-        Customer customer = new Customer(UUID.randomUUID(), "Michael", "1234");
+        String phoneNumber = "1234";
+        Customer customer = new Customer(UUID.randomUUID(), "Michael", phoneNumber);
         /* Mocking the Return if Method findCustomerByPhoneNumber() is called */
         given(customerRepository.findCustomerByPhoneNumber(customer.getPhoneNumber())).willReturn(Optional.of(customer));
+        /* Mocking the Return if Method test() is called */
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
         /* When */
         customerService.saveNewCustomer(customer);
         /* Then */
@@ -82,15 +108,18 @@ class CustomerServiceTest {
     @Test
     void itShouldThrowAnExceptionWhenPhoneNumberIsTaken() {
         /* Given */
-        Customer customer1 = new Customer(UUID.randomUUID(), "Michael", "1234");
-        Customer customer2 = new Customer(UUID.randomUUID(), "Marie", "1234");
+        String phoneNumber = "1234";
+        Customer customer1 = new Customer(UUID.randomUUID(), "Michael", phoneNumber);
+        Customer customer2 = new Customer(UUID.randomUUID(), "Marie", phoneNumber);
         /* Mocking the Return if Method findCustomerByPhoneNumber() is called */
         given(customerRepository.findCustomerByPhoneNumber(customer2.getPhoneNumber())).willReturn(Optional.of(customer2));
+        /* Mocking the Return if Method test() is called */
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
         /* When */
         /* Then */
         assertThatThrownBy(()-> customerService.saveNewCustomer(customer1))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(String.format("Phone Number %s is taken ", customer1.getPhoneNumber()));
+                .hasMessageContaining(String.format("Phone Number %s is taken ", phoneNumber));
         then(customerRepository).should(never()).save(any(Customer.class));
     }
 }
