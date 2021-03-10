@@ -23,7 +23,7 @@ public class PaymentService {
     void chargeCard(UUID customerId, Payment payment) {
         /* Check if Customer is present */
         Optional<Customer> customerOptional = customerRepository.findById(customerId);
-        if(!customerOptional.isPresent()) {
+        if (!customerOptional.isPresent()) {
             throw new IllegalStateException(String.format("Customer with ID %s not found.", customerId));
         }
 
@@ -31,7 +31,7 @@ public class PaymentService {
         String paymentCurrencyCode = payment.getCurrency().getCurrencyCode();
         boolean isCurrencyAccepted = ACCEPTED_CURRENCIES.stream().anyMatch(c -> c.getCurrencyCode().equals(paymentCurrencyCode));
 
-        if(!isCurrencyAccepted) {
+        if (!isCurrencyAccepted) {
             throw new IllegalStateException(String.format("Currency with CurrencyCode %s is not supported.", paymentCurrencyCode));
         }
 
@@ -39,12 +39,20 @@ public class PaymentService {
         CardPaymentCharge cardPaymentCharge = cardPaymentCharger.chargeCard(payment.getSource(), payment.getAmount(), payment.getCurrency(), payment.getDescription());
 
         /* Check if Customer is debited */
-        if(!cardPaymentCharge.isCardDebited()) {
+        if (!cardPaymentCharge.isCardDebited()) {
             throw new IllegalStateException(String.format("Card not debited for Customer %s.", customerId));
         }
 
         /* Insert Payment to Customer and save Payment */
         payment.setCustomerId(customerId);
         paymentRepository.save(payment);
+    }
+
+    Payment searchPayment(Long paymentId) {
+        Optional<Payment> optionalPayment = paymentRepository.findById(paymentId);
+        if (!optionalPayment.isPresent()) {
+            throw new IllegalStateException(String.format("Payment with PaymentId %s not found.", paymentId));
+        }
+        return optionalPayment.get();
     }
 }

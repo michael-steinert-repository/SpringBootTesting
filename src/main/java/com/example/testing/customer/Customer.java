@@ -14,7 +14,6 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(value = {"id"}, allowGetters = true)
 @Entity
 public class Customer {
     @Id
